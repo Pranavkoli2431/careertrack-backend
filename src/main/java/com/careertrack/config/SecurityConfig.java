@@ -1,5 +1,7 @@
 package com.careertrack.config;
 
+import com.careertrack.exception.RestAccessDeniedHandler;
+import com.careertrack.exception.RestAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -14,7 +16,9 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(
-            HttpSecurity http
+            HttpSecurity http,
+            RestAuthenticationEntryPoint authenticationEntryPoint,
+            RestAccessDeniedHandler accessDeniedHandler
     ) throws Exception {
 
         http
@@ -27,7 +31,6 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(authorize -> authorize
-
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/auth/register",
@@ -42,9 +45,24 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
-                .oauth2ResourceServer(oauth2 ->
-                        oauth2.jwt(jwt ->
-                                jwt.jwtAuthenticationConverter(
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(
+                                authenticationEntryPoint
+                        )
+                        .accessDeniedHandler(
+                                accessDeniedHandler
+                        )
+                )
+
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .authenticationEntryPoint(
+                                authenticationEntryPoint
+                        )
+                        .accessDeniedHandler(
+                                accessDeniedHandler
+                        )
+                        .jwt(jwt -> jwt
+                                .jwtAuthenticationConverter(
                                         jwtAuthenticationConverter()
                                 )
                         )
