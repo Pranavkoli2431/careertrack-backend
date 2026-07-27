@@ -20,20 +20,24 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     public UserService(
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            JwtService jwtService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
     }
 
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
 
-        String normalizedEmail =
-                request.getEmail().trim().toLowerCase(Locale.ROOT);
+        String normalizedEmail = request.getEmail()
+                .trim()
+                .toLowerCase(Locale.ROOT);
 
         if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
             throw new ResponseStatusException(
@@ -66,8 +70,9 @@ public class UserService {
     @Transactional(readOnly = true)
     public LoginResponse login(LoginRequest request) {
 
-        String normalizedEmail =
-                request.getEmail().trim().toLowerCase(Locale.ROOT);
+        String normalizedEmail = request.getEmail()
+                .trim()
+                .toLowerCase(Locale.ROOT);
 
         User user = userRepository
                 .findByEmailIgnoreCase(normalizedEmail)
@@ -93,12 +98,17 @@ public class UserService {
             );
         }
 
+        JwtService.TokenDetails tokenDetails =
+                jwtService.generateToken(user);
+
         return new LoginResponse(
+                tokenDetails.accessToken(),
+                "Bearer",
+                tokenDetails.expiresAt(),
                 user.getId(),
                 user.getFullName(),
                 user.getEmail(),
-                user.getRole(),
-                "Login successful"
+                user.getRole()
         );
     }
 }
