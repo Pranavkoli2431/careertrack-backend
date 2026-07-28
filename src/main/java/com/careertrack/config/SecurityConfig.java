@@ -1,24 +1,29 @@
 package com.careertrack.config;
 
-import com.careertrack.exception.RestAccessDeniedHandler;
-import com.careertrack.exception.RestAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 
 @Configuration
+@EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            RestAuthenticationEntryPoint authenticationEntryPoint,
-            RestAccessDeniedHandler accessDeniedHandler
+            JwtAuthenticationConverter jwtAuthenticationConverter,
+            AuthenticationEntryPoint authenticationEntryPoint,
+            AccessDeniedHandler accessDeniedHandler
     ) throws Exception {
 
         http
@@ -30,7 +35,7 @@ public class SecurityConfig {
                         )
                 )
 
-                .authorizeHttpRequests(authorize -> authorize
+                .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/auth/register",
@@ -39,32 +44,32 @@ public class SecurityConfig {
 
                         .requestMatchers(
                                 "/actuator/health",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
                                 "/error"
                         ).permitAll()
 
                         .anyRequest().authenticated()
                 )
 
-                .exceptionHandling(exceptions -> exceptions
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt
+                                .jwtAuthenticationConverter(
+                                        jwtAuthenticationConverter
+                                )
+                        )
                         .authenticationEntryPoint(
                                 authenticationEntryPoint
-                        )
-                        .accessDeniedHandler(
-                                accessDeniedHandler
                         )
                 )
 
-                .oauth2ResourceServer(oauth2 -> oauth2
+                .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(
                                 authenticationEntryPoint
                         )
                         .accessDeniedHandler(
                                 accessDeniedHandler
-                        )
-                        .jwt(jwt -> jwt
-                                .jwtAuthenticationConverter(
-                                        jwtAuthenticationConverter()
-                                )
                         )
                 );
 
@@ -78,7 +83,7 @@ public class SecurityConfig {
                 new JwtGrantedAuthoritiesConverter();
 
         authoritiesConverter.setAuthoritiesClaimName("roles");
-        authoritiesConverter.setAuthorityPrefix("ROLE_");
+        authoritiesConverter.setAuthorityPrefix("");
 
         JwtAuthenticationConverter authenticationConverter =
                 new JwtAuthenticationConverter();
