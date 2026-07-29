@@ -3,15 +3,15 @@ spring:
     name: careertrack-backend
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/careertrack_db
-    username: postgres
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/careertrack_db}
+    username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
+    show-sql: ${SHOW_SQL:false}
     open-in-view: false
     properties:
       hibernate:
@@ -22,10 +22,19 @@ spring:
     locations: classpath:db/migration
 
 server:
-  port: 8080
+  port: ${PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
 
 app:
   jwt:
     secret: ${JWT_SECRET}
     issuer: careertrack-backend
     access-token-minutes: 60
+
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
